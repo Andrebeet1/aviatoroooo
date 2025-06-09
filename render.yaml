@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: aviator-bot
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: BOT_TOKEN
+        value: TON_TOKEN_TELEGRAM
+      - key: WEBHOOK_URL
+        value: https://TON-NOM.onrender.com
