@@ -60,6 +60,7 @@ bot.action('predict', async (ctx) => {
     ...keyboard
   });
 
+  if (!userMessages[chatId]) userMessages[chatId] = []; // <-- Correction ici
   userMessages[chatId].push(msg.message_id);
 
   // Répondre au callback pour éviter le spinner
