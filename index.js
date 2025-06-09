@@ -49,3 +49,7 @@ bot.telegram.setWebhook(`${process.env.WEBHOOK_URL}/webhook`);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`✅ Bot en ligne sur le port ${PORT}`));
+
+app.get('/', (req, res) => {
+  res.send('🤖 Aviator Predictor Bot est en ligne');
+});
