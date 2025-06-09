@@ -9,48 +9,58 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
 app.use(express.json());
 
-// Mémoriser le dernier message pour chaque utilisateur
-const lastMessages = {};
+// Chaque utilisateur a sa liste de messages à supprimer
+const userMessages = {};
 
 const keyboard = {
   reply_markup: {
     keyboard: [[{ text: '🎯 Nouvelle prédiction' }]],
     resize_keyboard: true,
-    is_persistent: true
-  }
+    is_persistent: true,
+  },
 };
 
-bot.start(ctx => {
-  ctx.reply(
+// START : message de bienvenue + clavier
+bot.start(async (ctx) => {
+  const chatId = ctx.chat.id;
+  const msg = await ctx.reply(
     'Bienvenue sur Aviator Predictor 🚀\nClique sur 🎯 Nouvelle prédiction pour commencer.',
     keyboard
   );
+
+  if (!userMessages[chatId]) userMessages[chatId] = [];
+  userMessages[chatId].push(msg.message_id);
 });
 
-bot.hears('🎯 Nouvelle prédiction', async ctx => {
+// Action du bouton
+bot.hears('🎯 Nouvelle prédiction', async (ctx) => {
   const chatId = ctx.chat.id;
 
-  // Supprimer le message précédent s'il existe
-  if (lastMessages[chatId]) {
-    try {
-      await ctx.telegram.deleteMessage(chatId, lastMessages[chatId]);
-    } catch (err) {
-      console.warn(`❗ Erreur suppression message : ${err.message}`);
+  // Supprimer les anciens messages
+  if (userMessages[chatId]) {
+    for (const msgId of userMessages[chatId]) {
+      try {
+        await ctx.telegram.deleteMessage(chatId, msgId);
+      } catch (err) {
+        // Erreur silencieuse
+      }
     }
+    userMessages[chatId] = [];
+  } else {
+    userMessages[chatId] = [];
   }
 
   // Générer prédiction
-  const multiplier = generateAviatorMultiplier(); // par ex. 1.09, 3.42
-  const crash = Math.random() < 0.1; // 10% de chance de crash
+  const multiplier = generateAviatorMultiplier();
+  const crash = Math.random() < 0.1;
   const predictionText = `🚀 <b>Va crasher à :</b> ${multiplier}x ${crash ? '❌💥' : '✅'}`;
 
-  // Envoyer prédiction
-  const sent = await ctx.reply(predictionText, {
+  const msg = await ctx.reply(predictionText, {
     parse_mode: 'HTML',
-    ...keyboard
+    ...keyboard,
   });
 
-  lastMessages[chatId] = sent.message_id;
+  userMessages[chatId].push(msg.message_id);
 });
 
 // Webhook
@@ -62,5 +72,8 @@ app.get('/', (req, res) => {
   res.send('🤖 Aviator Predictor Bot est en ligne');
 });
 
+// Démarrage serveur
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ Bot en ligne sur le port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`✅ Bot en ligne sur le port ${PORT}`);
+});
