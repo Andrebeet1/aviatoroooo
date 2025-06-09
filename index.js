@@ -34,7 +34,7 @@ bot.start(async (ctx) => {
   userMessages[chatId].push(msg.message_id);
 });
 
-// Quand l'utilisateur clique sur "🎯 Nouvelle prédiction"
+// Quand l'utilisateur clique sur "♻️ prédiction"
 bot.action('predict', async (ctx) => {
   const chatId = ctx.chat.id;
 
@@ -53,7 +53,7 @@ bot.action('predict', async (ctx) => {
   // Générer prédiction
   const multiplier = generateAviatorMultiplier();
   const crash = Math.random() < 0.1;
-  const predictionText = `🚀 <b>Va crasher à :</b> ${multiplier}x ${crash ? '❌💥' : '✅'}`;
+  const predictionText = `🚀 <b>Va crasher à :</b> ${multiplier}x ${crash ? '❌💥' : '📈📉'}`;
 
   const msg = await ctx.reply(predictionText, {
     parse_mode: 'HTML',
