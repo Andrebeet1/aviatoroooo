@@ -9,22 +9,24 @@ const bot = new Telegraf(process.env.BOT_TOKEN);
 const app = express();
 app.use(express.json());
 
-// Chaque utilisateur a sa liste de messages à supprimer
+// Stocker les messages par utilisateur
 const userMessages = {};
 
+// Clavier inline
 const keyboard = {
   reply_markup: {
-    keyboard: [[{ text: '🎯 Nouvelle prédiction' }]],
-    resize_keyboard: true,
-    is_persistent: true,
-  },
+    inline_keyboard: [
+      [{ text: '🎯 Nouvelle prédiction', callback_data: 'predict' }]
+    ]
+  }
 };
 
-// START : message de bienvenue + clavier
+// START : message de bienvenue avec clavier inline
 bot.start(async (ctx) => {
   const chatId = ctx.chat.id;
+
   const msg = await ctx.reply(
-    'Bienvenue sur Aviator Predictor 🚀\nClique sur 🎯 Nouvelle prédiction pour commencer.',
+    'Bienvenue sur Aviator Predictor 🚀\nClique sur le bouton ci-dessous pour commencer.',
     keyboard
   );
 
@@ -32,21 +34,19 @@ bot.start(async (ctx) => {
   userMessages[chatId].push(msg.message_id);
 });
 
-// Action du bouton
-bot.hears('🎯 Nouvelle prédiction', async (ctx) => {
+// Quand l'utilisateur clique sur "🎯 Nouvelle prédiction"
+bot.action('predict', async (ctx) => {
   const chatId = ctx.chat.id;
 
-  // Supprimer les anciens messages
+  // Supprimer anciens messages
   if (userMessages[chatId]) {
     for (const msgId of userMessages[chatId]) {
       try {
         await ctx.telegram.deleteMessage(chatId, msgId);
       } catch (err) {
-        // Erreur silencieuse
+        // ignorer
       }
     }
-    userMessages[chatId] = [];
-  } else {
     userMessages[chatId] = [];
   }
 
@@ -57,13 +57,16 @@ bot.hears('🎯 Nouvelle prédiction', async (ctx) => {
 
   const msg = await ctx.reply(predictionText, {
     parse_mode: 'HTML',
-    ...keyboard,
+    ...keyboard
   });
 
   userMessages[chatId].push(msg.message_id);
+
+  // Répondre au callback pour éviter le spinner
+  await ctx.answerCbQuery();
 });
 
-// Webhook
+// Webhook Express
 app.use(bot.webhookCallback('/webhook'));
 bot.telegram.setWebhook(`${process.env.WEBHOOK_URL}/webhook`);
 
@@ -72,7 +75,7 @@ app.get('/', (req, res) => {
   res.send('🤖 Aviator Predictor Bot est en ligne');
 });
 
-// Démarrage serveur
+// Démarrage du serveur
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Bot en ligne sur le port ${PORT}`);
